@@ -1,65 +1,27 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[52]:
-
-
+# import basic required librarires 
 import pandas as pd
-
-
-# In[53]:
-
-
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, LSTM, Dense
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, Conv1D, MaxPooling1D, Flatten, Dense
+from tensorflow.keras.callbacks import EarlyStopping
+#import data set
 data=pd.read_excel('IPHONE.xlsx') 
-
-
-# In[54]:
-
-
 data.head()
-
-
-# In[55]:
-
-
 data.columns
-
-
-# In[56]:
-
-
+# adding rateing as a next column in data 
 data = data[['Review', 'Rating']]
-
-
-# In[61]:
-
-
 data.head()
-
-
-# In[ ]:
-
-
 # we are classifying the data here to filter out the comment which have positive reviews for the product
 # Rateing over 3 is considered as reviews with positive atitiude 
 # features mentioned in reviews with rateing less than 3 condidered as featured needed improvment 
-
-
-# In[58]:
-
-
 data['Rating'] = data['Rating'].astype(float)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
 for x in data['Rating']:
     def replace_values(x):
         if x > 3:
@@ -68,36 +30,13 @@ for x in data['Rating']:
             return 'Need Improve'
     data['Rating'] = data['Rating'].apply(replace_values)
 
-
-# In[62]:
-
-
 data.head()
-
-
-# In[63]:
-
-
 # Convert 'rev' column to lowercase
 data['Review'] = data['Review'].str.lower()
-
-
-# In[70]:
-
-
 df = data
 data.head()
 
-
-# In[71]:
-
-
 import re
-
-
-# In[72]:
-
-
 # Function to remove HTML tags and URLs
 def remove_html_and_urls(text):
     # Remove HTML tags
@@ -105,22 +44,9 @@ def remove_html_and_urls(text):
     # Remove URLs
     text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
     return text
-
-
-# In[73]:
-
-
+    
 data['Review'] = data['Review'].apply(remove_html_and_urls)
-
-
-# In[74]:
-
-
 data.head()
-
-
-# In[75]:
-
 
 # Function to remove special characters
 def remove_special_characters(text):
@@ -129,31 +55,12 @@ def remove_special_characters(text):
     return text
 # Apply function to 'rev' column
 data['Review'] = data['Review'].apply(remove_special_characters)
-
-
-# In[76]:
-
-
 data.head()
-
-
-# In[77]:
-
 
 import nltk
 from nltk.corpus import stopwords
-
-
-# In[78]:
-
-
 # Download stopwords data
 nltk.download('stopwords')
-
-
-# In[79]:
-
-
 def remove_stopwords(text):
     # Tokenize the text
     words = text.split()
@@ -163,45 +70,19 @@ def remove_stopwords(text):
     filtered_text = ' '.join(filtered_words)
     return filtered_text
 data['Review'] = data['Review'].apply(remove_stopwords)
-
-
-# In[80]:
-
-
 data.head()
 
-
-# In[ ]:
-
-
 # since some features of mobile is specific with numbers we are not removing any numbers 
-
-
-# In[86]:
-
-
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.tokenize import word_tokenize
-
-
-# In[87]:
-
 
 # Download NLTK resources
 nltk.download('punkt')
 nltk.download('wordnet')
 
-
-# In[88]:
-
-
 # Initialize stemmer and lemmatizer
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
-
-
-# In[89]:
-
 
 # Function for stemming and lemmatization
 def stem_and_lemmatize(text):
@@ -216,27 +97,11 @@ def stem_and_lemmatize(text):
 # Apply function to 'd' column
 data['Review'], data['Review'] = zip(*data['Review'].map(stem_and_lemmatize))
 
-
-# In[90]:
-
-
 data.head()
-
-
-# In[ ]:
-
 
 # Text data is now optimized for feature selction
 
-
-# In[91]:
-
-
 from sklearn.feature_extraction.text import TfidfVectorizer
-
-
-# In[93]:
-
 
 # Initialize TfidfVectorizer
 tfidf_vectorizer = TfidfVectorizer()
@@ -245,35 +110,15 @@ tfidf_matrix = tfidf_vectorizer.fit_transform(df['Review'])
 # Convert the TF-IDF matrix to DataFrame
 tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), columns=tfidf_vectorizer.get_feature_names())
 
-
-# In[94]:
-
-
 print(tfidf_df)
 
-
-# In[ ]:
-
-
 # createing tri diagram to find the features 
-
-
-# In[95]:
-
 
 from sklearn.feature_extraction.text import CountVectorizer
 import matplotlib.pyplot as plt
 
-
-# In[96]:
-
-
 vectorizer = CountVectorizer(ngram_range=(3, 3))
 X = vectorizer.fit_transform(df['Review'])
-
-
-# In[98]:
-
 
 # Get trigram names
 trigram_names = vectorizer.get_feature_names()
@@ -281,10 +126,6 @@ trigram_names = vectorizer.get_feature_names()
 trigram_frequencies = X.sum(axis=0).A1
 # Create DataFrame with trigrams and frequencies
 trigram_df = pd.DataFrame({'Trigram': trigram_names, 'Frequency': trigram_frequencies})
-
-
-# In[102]:
-
 
 # Plot the top 20 trigrams
 plt.figure(figsize=(20, 6))
@@ -295,39 +136,8 @@ plt.title('Top 20 Trigrams')
 plt.gca().invert_yaxis()  # Invert y-axis to display highest frequency at the top
 plt.show()
 
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[103]:
-
-
 #Bow modeling for NLP
 from sklearn.feature_extraction.text import CountVectorizer
-
-
-# In[104]:
 
 
 # Initialize CountVectorizer for Bag-of-Words representation
@@ -337,42 +147,17 @@ bow_matrix = vectorizer.fit_transform(data['Review'])
 # Convert the BoW matrix to DataFrame
 bow_df = pd.DataFrame(bow_matrix.toarray(), columns=vectorizer.get_feature_names())
 
-
-# In[105]:
-
-
 print(bow_df)
 
-
-# In[106]:
-
-
 pip install gensim
-
-
-# In[107]:
-
-
 from gensim.models import Word2Vec
 from nltk.tokenize import word_tokenize
-
-
-# In[108]:
-
 
 # Tokenize the text in the 'd' column
 tokenized_text = [word_tokenize(text) for text in data['Review']]
 
-
-# In[109]:
-
-
 # Train Word2Vec model
 word2vec_model = Word2Vec(sentences=tokenized_text, vector_size=100, window=5, min_count=1, workers=4)
-
-
-# In[110]:
-
 
 # Get word embeddings for each word in each sentence
 word_embeddings = []
@@ -380,28 +165,8 @@ for sentence in tokenized_text:
     sentence_embeddings = [word2vec_model.wv[word] for word in sentence if word in word2vec_model.wv]
     word_embeddings.append(sentence_embeddings)
 
-
-# In[111]:
-
-
 print("Word embeddings for each word in each sentence:")
 print(word_embeddings)
-
-
-# In[115]:
-
-
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense
-
-
-# In[116]:
-
 
 label_encoder = LabelEncoder()
 data['Rating'] = label_encoder.fit_transform(data['Rating'])
@@ -415,10 +180,8 @@ X = pad_sequences(X)
 X_train, X_test, y_train, y_test = train_test_split(X, data['Rating'], test_size=0.2, random_state=42)
 
 
-# In[117]:
-
-
-# Model
+############################
+# Model with RNN
 embedding_dim = 100
 vocab_size = len(tokenizer.word_index) + 1
 
@@ -432,26 +195,14 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']
 # Train the model
 model.fit(X_train, y_train, epochs=5, batch_size=32, validation_data=(X_test, y_test))
 
-
-# In[118]:
-
-
 # Evaluate the model
 loss, accuracy = model.evaluate(X_test, y_test)
 print("Test Accuracy:", accuracy)
-
-
-# In[119]:
-
 
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, Conv1D, MaxPooling1D, Flatten, Dense
 from tensorflow.keras.callbacks import EarlyStopping
-
-
-# In[120]:
-
 
 # Encode labels
 label_encoder = LabelEncoder()
@@ -464,11 +215,8 @@ X = tokenizer.texts_to_sequences(data['Review'])
 X = pad_sequences(X, maxlen=max_len)
 X_train, X_test, y_train, y_test = train_test_split(X, data['Rating'], test_size=0.2, random_state=42)
 
-
-# In[121]:
-
-
-# Model
+########################################################################
+# Model with CNN
 embedding_dim = 100
 num_filters = 64
 kernel_size = 3
@@ -491,22 +239,14 @@ epochs = 10
 model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, validation_data=(X_test, y_test), callbacks=[early_stopping])
 
 
-# In[122]:
-
-
 # Evaluate the model
 loss, accuracy = model.evaluate(X_test, y_test)
 print("Test Accuracy:", accuracy)
 
 
-# In[ ]:
-
 
 ###### Cod used for the review extraction from amazon
 #### Used library BeautifulSoup
-
-
-# In[ ]:
 
 
 import requests
