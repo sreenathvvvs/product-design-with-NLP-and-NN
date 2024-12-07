@@ -1,0 +1,35 @@
+###### Cod used for the review extraction from amazon
+#### Used library BeautifulSoup
+
+
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+def scrape_amazon_reviews(url, max_pages=20):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    reviews = []
+    ratings = []
+    
+    for page in range(1, max_pages+1):
+        page_url = f"{url}?pageNumber={page}"
+        response = requests.get(page_url, headers=headers)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            review_elements = soup.find_all('div', class_='a-section review aok-relative')
+            for review_element in review_elements:
+                review_text = review_element.find('span', class_='review-text').get_text(strip=True)
+                rating = review_element.find('i', class_='review-rating').get_text(strip=True)
+                reviews.append(review_text)
+                ratings.append(rating)
+        else:
+            print(f"Failed to fetch page {page}. Status code: {response.status_code}")
+            break
+    
+    return reviews, ratings
+
+# Example usage
+url = 'https://www.amazon.com/Apple-iPhone-5-Unlocked/product-reviews/B07ZPQWTWF'
+reviews, ratings = scrape_amazon_reviews(url)
